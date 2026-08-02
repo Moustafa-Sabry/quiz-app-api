@@ -69,4 +69,8 @@ export class CreateQuizDto {
   @IsOptional()
   @IsBoolean()
   randomize?: boolean;
+
+  @IsNotEmpty()
+  @IsMongoId()
+  createdBy: string;
 }

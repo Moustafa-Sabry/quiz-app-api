@@ -40,21 +40,41 @@ export class QuestionService {
     }
     const question = new this.questionModel(createQuestionDto);
 
-    return question.save();
+    const savedQuestion = await question.save();
+
+    return {
+      message: 'Question created successfully',
+      data: savedQuestion,
+    };
   }
   async findAll() {
-    return this.questionModel.find({
+    const questions = await this.questionModel.find({
       isDeleted: false,
     });
+
+    return {
+      message: 'Questions retrieved successfully',
+      data: questions,
+    };
   }
   async remove(id: string) {
     const question = await this.findActiveQuestion(id);
 
     question.isDeleted = true;
-    return question.save();
+
+    await question.save();
+
+    return {
+      message: 'Question deleted successfully',
+    };
   }
   async findOne(id: string) {
-    return this.findActiveQuestion(id);
+    const question = await this.findActiveQuestion(id);
+
+    return {
+      message: 'Question retrieved successfully',
+      data: question,
+    };
   }
 
   async update(id: string, updateQuestionDto: UpdateQuestionDto) {
@@ -94,7 +114,12 @@ export class QuestionService {
 
     Object.assign(question, updateQuestionDto);
 
-    return question.save();
+    const updatedQuestion = await question.save();
+
+    return {
+      message: 'Question updated successfully',
+      data: updatedQuestion,
+    };
   }
 
   private async findActiveQuestion(id: string) {

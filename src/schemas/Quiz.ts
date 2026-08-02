@@ -80,7 +80,7 @@ export class Quiz {
   })
   accessCode: string;
   @Prop({
-    // required: true,
+    required: true,
     type: Types.ObjectId,
     ref: 'User',
   })

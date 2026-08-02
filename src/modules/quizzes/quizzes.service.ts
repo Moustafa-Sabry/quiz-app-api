@@ -3,9 +3,10 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { QuizFilter } from '../../common/interfaces/quizfilter.interface';
 import { Quiz } from '../../schemas/Quiz';
 import { CreateQuizDto } from './dtos/CreateQuiz.dto';
@@ -13,6 +14,8 @@ import { UpdateQuizDto } from './dtos/UpdateQuiz.dto';
 import { GetQuizzesDto } from './dtos/GetAllQuizs.dto';
 import { QuizStatus } from '../../common/enums/quizStatus.enum';
 import { Question } from '../../schemas/Question';
+import { Group, GroupDocument } from '../../schemas/Group';
+import { User, UserDocument } from '../../schemas/User';
 @Injectable()
 export class QuizzesService {
   constructor(
@@ -20,6 +23,11 @@ export class QuizzesService {
     private readonly quizModel: Model<Quiz>,
     @InjectModel(Question.name)
     private readonly questionModel: Model<Question>,
+    @InjectModel(Group.name)
+    private readonly groupModel: Model<GroupDocument>,
+
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
   ) {}
   //  check and validate the existance of the group , creator
   async create(createQuizDto: CreateQuizDto) {
@@ -32,18 +40,33 @@ export class QuizzesService {
       throw new ConflictException('Quiz already exists');
     }
 
+    // Check that the creator exists and is an Instructor
+    const creator = await this.userModel.findOne({
+      _id: createQuizDto.createdBy,
+      role: 'Instructor',
+    });
+
+    if (!creator) {
+      throw new NotFoundException(
+        'Creator not found or user is not an Instructor',
+      );
+    }
+
+    // Validate number of questions
     if (createQuizDto.questions.length !== createQuizDto.numberOfQuestions) {
       throw new BadRequestException(
         'Number of questions must match the provided questions',
       );
     }
 
+    // Check for duplicate questions
     if (
       new Set(createQuizDto.questions).size !== createQuizDto.questions.length
     ) {
       throw new BadRequestException('Questions must not contain duplicates');
     }
 
+    // Check that all questions exist and are not deleted
     const existingQuestions = await this.questionModel.find({
       _id: { $in: createQuizDto.questions },
       isDeleted: false,
@@ -55,12 +78,38 @@ export class QuizzesService {
       );
     }
 
+    // Check that all assigned groups exist
+    const groups = await this.groupModel.find({
+      _id: { $in: createQuizDto.assignedToGroups },
+    });
+
+    if (groups.length !== createQuizDto.assignedToGroups.length) {
+      throw new NotFoundException('One or more assigned groups do not exist');
+    }
+
+    // Check that all groups belong to the quiz creator
+    const unauthorizedGroup = groups.find(
+      (group) => group.instructorId.toString() !== createQuizDto.createdBy,
+    );
+
+    if (unauthorizedGroup) {
+      throw new ForbiddenException(
+        'You can only assign groups that belong to the quiz creator',
+      );
+    }
+
     const quiz = new this.quizModel({
       ...createQuizDto,
       scheduledDate: new Date(createQuizDto.scheduledDate),
     });
 
-    return quiz.save();
+    const savedQuiz = await quiz.save();
+
+    return {
+      message: 'Quiz created successfully',
+      data: savedQuiz,
+      accessCode: savedQuiz.accessCode,
+    };
   }
   async remove(id: string) {
     const quiz = await this.quizModel.findOne({
@@ -74,7 +123,11 @@ export class QuizzesService {
 
     quiz.isDeleted = true;
 
-    return quiz.save();
+    await quiz.save();
+
+    return {
+      message: 'Quiz deleted successfully',
+    };
   }
   async update(id: string, updateQuizDto: UpdateQuizDto) {
     const quiz = await this.quizModel.findOne({
@@ -104,6 +157,43 @@ export class QuizzesService {
           'Number of questions must match the quiz numberOfQuestions',
         );
       }
+
+      if (
+        new Set(updateQuizDto.questions).size !== updateQuizDto.questions.length
+      ) {
+        throw new BadRequestException('Questions must not contain duplicates');
+      }
+
+      const existingQuestions = await this.questionModel.find({
+        _id: { $in: updateQuizDto.questions },
+        isDeleted: false,
+      });
+
+      if (existingQuestions.length !== updateQuizDto.questions.length) {
+        throw new NotFoundException(
+          'One or more questions do not exist or have been deleted',
+        );
+      }
+    }
+
+    if (updateQuizDto.assignedToGroups) {
+      const groups = await this.groupModel.find({
+        _id: { $in: updateQuizDto.assignedToGroups },
+      });
+
+      if (groups.length !== updateQuizDto.assignedToGroups.length) {
+        throw new NotFoundException('One or more assigned groups do not exist');
+      }
+
+      const unauthorizedGroup = groups.find(
+        (group) => group.instructorId.toString() !== quiz.createdBy.toString(),
+      );
+
+      if (unauthorizedGroup) {
+        throw new ForbiddenException(
+          'You can only assign groups that belong to the quiz creator',
+        );
+      }
     }
 
     const updatedQuiz = await this.quizModel.findOneAndUpdate(
@@ -129,7 +219,11 @@ export class QuizzesService {
       throw new NotFoundException('Quiz not found');
     }
 
-    return updatedQuiz;
+    return {
+      message: 'Quiz updated successfully',
+      data: updatedQuiz,
+      accessCode: updatedQuiz.accessCode,
+    };
   }
   async findAll(getQuizzesDto: GetQuizzesDto) {
     const filter: QuizFilter = {
@@ -158,7 +252,12 @@ export class QuizzesService {
       };
     }
 
-    return this.quizModel.find(filter);
+    const quizzes = await this.quizModel.find(filter);
+
+    return {
+      message: 'Quizzes retrieved successfully',
+      data: quizzes,
+    };
   }
   async findOne(id: string) {
     const quiz = await this.quizModel
@@ -173,6 +272,9 @@ export class QuizzesService {
       throw new NotFoundException('Quiz not found');
     }
 
-    return quiz;
+    return {
+      message: 'Quiz retrieved successfully',
+      data: quiz,
+    };
   }
 }
