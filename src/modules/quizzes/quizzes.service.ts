@@ -29,7 +29,7 @@ export class QuizzesService {
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
   ) {}
-  //  check and validate the existance of the group , creator
+
   async create(createQuizDto: CreateQuizDto) {
     const existingQuiz = await this.quizModel.findOne({
       title: createQuizDto.title,
@@ -40,7 +40,6 @@ export class QuizzesService {
       throw new ConflictException('Quiz already exists');
     }
 
-    // Check that the creator exists and is an Instructor
     const creator = await this.userModel.findOne({
       _id: createQuizDto.createdBy,
       role: 'Instructor',
@@ -52,21 +51,18 @@ export class QuizzesService {
       );
     }
 
-    // Validate number of questions
     if (createQuizDto.questions.length !== createQuizDto.numberOfQuestions) {
       throw new BadRequestException(
         'Number of questions must match the provided questions',
       );
     }
 
-    // Check for duplicate questions
     if (
       new Set(createQuizDto.questions).size !== createQuizDto.questions.length
     ) {
       throw new BadRequestException('Questions must not contain duplicates');
     }
 
-    // Check that all questions exist and are not deleted
     const existingQuestions = await this.questionModel.find({
       _id: { $in: createQuizDto.questions },
       isDeleted: false,
@@ -78,7 +74,6 @@ export class QuizzesService {
       );
     }
 
-    // Check that all assigned groups exist
     const groups = await this.groupModel.find({
       _id: { $in: createQuizDto.assignedToGroups },
     });
@@ -87,7 +82,6 @@ export class QuizzesService {
       throw new NotFoundException('One or more assigned groups do not exist');
     }
 
-    // Check that all groups belong to the quiz creator
     const unauthorizedGroup = groups.find(
       (group) => group.instructorId.toString() !== createQuizDto.createdBy,
     );
