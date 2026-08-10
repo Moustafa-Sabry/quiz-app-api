@@ -1,34 +1,43 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Quiz, QuizSchema } from '../../schemas/Quiz';
-import { QuizzesController } from './quizzes.controller';
+
 import { QuizzesService } from './quizzes.service';
-import { Question, QuestionSchema } from '../../schemas/Question';
-import { Group, GroupSchema } from '../../schemas/Group';
-import { User, UserSchema } from '../../schemas/User';
+import { QuizzesController } from './quizzes.controller';
+
+import {
+  Quiz,
+  QuizSchema,
+  Question,
+  QuestionSchema,
+  Group,
+  GroupSchema,
+  User,
+  UserSchema,
+} from '../../schemas';
+
+import { QuizCreatorService } from './Services/quiz-creator.service';
+import { QuizQuestionService } from './Services/quiz-question.service';
+import { QuizGroupService } from './Services/quiz-group.service';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
-      {
-        name: Quiz.name,
-        schema: QuizSchema,
-      },
-      {
-        name: Question.name,
-        schema: QuestionSchema,
-      },
-      {
-        name: Group.name,
-        schema: GroupSchema,
-      },
-      {
-        name: User.name,
-        schema: UserSchema,
-      },
+      { name: Quiz.name, schema: QuizSchema },
+      { name: Question.name, schema: QuestionSchema },
+      { name: Group.name, schema: GroupSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
+
   controllers: [QuizzesController],
-  providers: [QuizzesService],
+
+  providers: [
+    QuizzesService,
+    QuizCreatorService,
+    QuizQuestionService,
+    QuizGroupService,
+  ],
+
   exports: [QuizzesService],
 })
 export class QuizzesModule {}

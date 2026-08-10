@@ -2,10 +2,13 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsMongoId,
+  IsNumber,
   IsOptional,
   IsString,
-  IsMongoId,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -24,6 +27,12 @@ export class UpdateQuizDto {
   @IsOptional()
   @IsDateString()
   scheduledDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  maxAttempts?: number;
 
   @IsOptional()
   @IsArray()

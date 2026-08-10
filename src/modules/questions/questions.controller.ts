@@ -6,38 +6,57 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+
 import { QuestionService } from './questions.service';
 import { CreateQuestionDto } from './dtos/createQuestion.dto';
-import { DeleteQuestionDto } from './dtos/deleteQuestion.dto';
-import { GetQuestionDto } from './dtos/getQuestion.dto';
 import { UpdateQuestionDto } from './dtos/updateQuestion.dto';
+
+import { JwtAuthGuard } from '../../common/gaurds/jwt-auth.guard';
+import { RolesGuard } from '../../common/gaurds/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 
 @Controller('questions')
 export class QuestionController {
   constructor(private readonly questionsService: QuestionService) {}
 
   @Post()
-  async create(@Body() createQuestionDto: CreateQuestionDto) {
-    return this.questionsService.create(createQuestionDto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Instructor')
+  async create(
+    @Body() createQuestionDto: CreateQuestionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.questionsService.create(createQuestionDto, user._id);
   }
+
   @Get()
   async findAll() {
     return this.questionsService.findAll();
   }
-  @Delete(':id')
-  async remove(@Param() deleteQuestionDto: DeleteQuestionDto) {
-    return this.questionsService.remove(deleteQuestionDto.id);
-  }
+
   @Get(':id')
-  async findOne(@Param() getQuestionDto: GetQuestionDto) {
-    return this.questionsService.findOne(getQuestionDto.id);
+  async findOne(@Param('id') id: string) {
+    return this.questionsService.findOne(id);
   }
+
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Instructor')
   async update(
-    @Param() getQuestionDto: GetQuestionDto,
+    @Param('id') id: string,
     @Body() updateQuestionDto: UpdateQuestionDto,
   ) {
-    return this.questionsService.update(getQuestionDto.id, updateQuestionDto);
+    return this.questionsService.update(id, updateQuestionDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Instructor')
+  async remove(@Param('id') id: string) {
+    return this.questionsService.remove(id);
   }
 }

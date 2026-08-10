@@ -1,5 +1,5 @@
-import { Prop, Schema } from '@nestjs/mongoose';
-import { AnswersEnum } from '../common/enums/Answers.enum';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { AnswersEnum } from 'src/common/enums';
 
 @Schema({ _id: false })
 export class Answer {
@@ -7,10 +7,11 @@ export class Answer {
     required: true,
     enum: AnswersEnum,
   })
-  key: string;
+  key: AnswersEnum;
   @Prop({
     required: true,
     trim: true,
   })
   text: string;
 }
+export const AnswerSchema = SchemaFactory.createForClass(Answer);

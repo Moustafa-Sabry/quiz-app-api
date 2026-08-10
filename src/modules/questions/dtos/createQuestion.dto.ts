@@ -1,6 +1,4 @@
 import {
-  ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsEnum,
   IsNotEmpty,
@@ -13,9 +11,12 @@ import {
 import { Type } from 'class-transformer';
 
 import { CreateAnswerDto } from './createAnswer.dto';
-import { AnswersEnum } from '../../../common/enums/Answers.enum';
-import { CategoryType } from '../../../common/enums/categoies.enum';
-import { difficultyLevelenum } from '../../../common/enums/difficultyLevel.enum';
+import {
+  AnswersEnum,
+  CategoryType,
+  difficultyLevelenum,
+  QuestionType,
+} from '../../../common/enums';
 
 export class CreateQuestionDto {
   @IsNotEmpty()
@@ -29,8 +30,8 @@ export class CreateQuestionDto {
   description?: string;
 
   @IsArray()
-  @ArrayMinSize(4)
-  @ArrayMaxSize(4)
+  // @ArrayMinSize(4)
+  // @ArrayMaxSize(4)
   @ValidateNested({ each: true })
   @Type(() => CreateAnswerDto)
   answers: CreateAnswerDto[];
@@ -38,6 +39,10 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   @IsEnum(AnswersEnum)
   correctAnswer: AnswersEnum;
+
+  @IsNotEmpty()
+  @IsEnum(QuestionType)
+  questionType: QuestionType;
 
   @IsNotEmpty()
   @IsEnum(CategoryType)

@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { AnswersEnum } from '../../../common/enums/Answers.enum';
+import { AnswersEnum } from '../../../common/enums';
 export class CreateAnswerDto {
   @IsNotEmpty()
   @IsEnum(AnswersEnum)

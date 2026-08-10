@@ -1,21 +1,24 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Answer } from './Answer';
-import { AnswersEnum } from '../common/enums/Answers.enum';
-import { CategoryType } from '../common/enums/categoies.enum';
-import { difficultyLevelenum } from '../common/enums/difficultyLevel.enum';
-
-export const AnswerSchema = SchemaFactory.createForClass(Answer);
+import { Answer, AnswerSchema } from './Answer';
+import {
+  difficultyLevelenum,
+  CategoryType,
+  AnswersEnum,
+  QuestionType,
+} from 'src/common/enums';
+import { Types } from 'mongoose';
 
 @Schema({
   timestamps: true,
 })
 export class Question {
   @Prop({
-    // required: true,
-    type: String,
+    required: true,
+    type: Types.ObjectId,
+    ref: 'User',
     trim: true,
   })
-  creator: string;
+  creator: Types.ObjectId;
   @Prop({
     required: true,
     type: String,
@@ -31,10 +34,6 @@ export class Question {
   @Prop({
     required: true,
     type: [AnswerSchema],
-    validate: {
-      validator: (answers: Answer[]) => answers.length === 4,
-      message: 'A question must have exactly 4 answers',
-    },
   })
   answers: Answer[];
   @Prop({
@@ -42,6 +41,11 @@ export class Question {
     enum: AnswersEnum,
   })
   correctAnswer: AnswersEnum;
+  @Prop({
+    required: true,
+    enum: QuestionType,
+  })
+  questionType: QuestionType;
   @Prop({
     required: true,
     enum: CategoryType,

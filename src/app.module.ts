@@ -6,9 +6,11 @@ import { DBConnect } from './config/DbConnect';
 import { GroupsModule } from './modules/groups/groups.module';
 import { QuestionsModule } from './modules/questions/questions.module';
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
+import { QuizAttemptsModule } from './modules/quiz-attempts/quiz-attempts.module';
 import { ResultsModule } from './modules/results/results.module';
 import { StudentsModule } from './modules/students/students.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+
 import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { ConfigModule } from '@nestjs/config';
     ResultsModule,
     StudentsModule,
     DashboardModule,
+    QuizAttemptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

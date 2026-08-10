@@ -1,8 +1,8 @@
-import { difficultyLevelenum } from '../enums/difficultyLevel.enum';
+import { difficultyLevelenum, CategoryType } from '../enums';
 
 export interface QuizFilter {
   isDeleted: boolean;
-  category?: string;
+  category?: CategoryType;
   difficultyLevel?: difficultyLevelenum;
   scheduledDate?: {
     $gte?: Date;

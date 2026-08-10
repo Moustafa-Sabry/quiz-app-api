@@ -1,4 +1,4 @@
-import { Question } from '../../schemas/Question';
+import { Question } from '../../schemas';
 import {
   BadRequestException,
   ConflictException,
@@ -9,13 +9,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateQuestionDto } from './dtos/createQuestion.dto';
 import { UpdateQuestionDto } from './dtos/updateQuestion.dto';
+import { QuestionType, AnswersEnum } from '../../common/enums';
 @Injectable()
 export class QuestionService {
   constructor(
     @InjectModel(Question.name)
     private readonly questionModel: Model<Question>,
   ) {}
-  async create(createQuestionDto: CreateQuestionDto) {
+  async create(createQuestionDto: CreateQuestionDto, creatorId: string) {
     const existingQuestion = await this.questionModel.findOne({
       title: createQuestionDto.title,
       isDeleted: false,
@@ -24,21 +25,61 @@ export class QuestionService {
     if (existingQuestion) {
       throw new ConflictException('Question already exists');
     }
-    const correctAnswerExists = createQuestionDto.answers.some(
-      (answer) => answer.key === createQuestionDto.correctAnswer,
-    );
 
-    if (!correctAnswerExists) {
+    const { questionType, answers, correctAnswer } = createQuestionDto;
+
+    const expectedAnswerCount = questionType === QuestionType.MCQ ? 4 : 2;
+
+    if (answers.length !== expectedAnswerCount) {
       throw new BadRequestException(
-        'Correct answer must match one of the provided answers',
+        `${questionType} questions must have exactly ${expectedAnswerCount} answers`,
       );
     }
-    const keys = createQuestionDto.answers.map((answer) => answer.key);
+
+    const keys = answers.map((answer) => answer.key);
 
     if (new Set(keys).size !== keys.length) {
       throw new BadRequestException('Answer keys must be unique');
     }
-    const question = new this.questionModel(createQuestionDto);
+
+    if (questionType === QuestionType.MCQ) {
+      const requiredKeys = [
+        AnswersEnum.A,
+        AnswersEnum.B,
+        AnswersEnum.C,
+        AnswersEnum.D,
+      ];
+
+      const hasAllKeys = requiredKeys.every((key) => keys.includes(key));
+
+      if (!hasAllKeys) {
+        throw new BadRequestException(
+          'MCQ questions must have A, B, C, and D answers',
+        );
+      }
+    }
+
+    if (questionType === QuestionType.TRUE_FALSE) {
+      const hasTrue = keys.includes(AnswersEnum.TRUE);
+      const hasFalse = keys.includes(AnswersEnum.FALSE);
+
+      if (!hasTrue || !hasFalse) {
+        throw new BadRequestException(
+          'True/False questions must have TRUE and FALSE answers',
+        );
+      }
+    }
+
+    if (!keys.includes(correctAnswer)) {
+      throw new BadRequestException(
+        'Correct answer must match one of the provided answers',
+      );
+    }
+
+    const question = new this.questionModel({
+      ...createQuestionDto,
+      creator: creatorId,
+    });
 
     const savedQuestion = await question.save();
 
@@ -92,34 +133,65 @@ export class QuestionService {
       }
     }
 
-    if (updateQuestionDto.answers && updateQuestionDto.correctAnswer) {
-      const correctAnswerExists = updateQuestionDto.answers.some(
-        (answer) => answer.key === updateQuestionDto.correctAnswer,
-      );
+    const questionType =
+      updateQuestionDto.questionType ?? question.questionType;
 
-      if (!correctAnswerExists) {
+    const answers = updateQuestionDto.answers ?? question.answers;
+
+    const correctAnswer =
+      updateQuestionDto.correctAnswer ?? question.correctAnswer;
+
+    const expectedAnswerCount = questionType === QuestionType.MCQ ? 4 : 2;
+
+    if (answers.length !== expectedAnswerCount) {
+      throw new BadRequestException(
+        `${questionType} questions must have exactly ${expectedAnswerCount} answers`,
+      );
+    }
+
+    const keys = answers.map((answer) => answer.key);
+
+    if (new Set(keys).size !== keys.length) {
+      throw new BadRequestException('Answer keys must be unique');
+    }
+
+    if (questionType === QuestionType.MCQ) {
+      const requiredKeys = [
+        AnswersEnum.A,
+        AnswersEnum.B,
+        AnswersEnum.C,
+        AnswersEnum.D,
+      ];
+
+      const hasAllKeys = requiredKeys.every((key) => keys.includes(key));
+
+      if (!hasAllKeys) {
         throw new BadRequestException(
-          'Correct answer must match one of the provided answers',
+          'MCQ questions must have A, B, C, and D answers',
         );
       }
     }
 
-    if (updateQuestionDto.answers) {
-      const keys = updateQuestionDto.answers.map((answer) => answer.key);
+    if (questionType === QuestionType.TRUE_FALSE) {
+      const hasTrue = keys.includes(AnswersEnum.TRUE);
+      const hasFalse = keys.includes(AnswersEnum.FALSE);
 
-      if (new Set(keys).size !== keys.length) {
-        throw new BadRequestException('Answer keys must be unique');
+      if (!hasTrue || !hasFalse) {
+        throw new BadRequestException(
+          'True/False questions must have TRUE and FALSE answers',
+        );
       }
+    }
+
+    if (!keys.includes(correctAnswer)) {
+      throw new BadRequestException(
+        'Correct answer must match one of the provided answers',
+      );
     }
 
     Object.assign(question, updateQuestionDto);
 
-    const updatedQuestion = await question.save();
-
-    return {
-      message: 'Question updated successfully',
-      data: updatedQuestion,
-    };
+    return question.save();
   }
 
   private async findActiveQuestion(id: string) {

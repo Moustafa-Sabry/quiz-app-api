@@ -1,7 +1,9 @@
 import { IsEnum, IsOptional } from 'class-validator';
-import { CategoryType } from '../../../common/enums/categoies.enum';
-import { difficultyLevelenum } from '../../../common/enums/difficultyLevel.enum';
-import { QuizStatus } from '../../../common/enums/quizStatus.enum';
+import {
+  CategoryType,
+  difficultyLevelenum,
+  QuizStatus,
+} from '../../../common/enums';
 
 export class GetQuizzesDto {
   @IsOptional()

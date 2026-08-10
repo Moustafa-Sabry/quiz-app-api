@@ -13,9 +13,11 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { difficultyLevelenum } from '../../../common/enums/difficultyLevel.enum';
-import { Duration } from '../../../common/enums/quizDuration.enum';
-import { CategoryType } from '../../../common/enums/categoies.enum';
+import {
+  difficultyLevelenum,
+  Duration,
+  CategoryType,
+} from '../../../common/enums';
 
 export class CreateQuizDto {
   @IsNotEmpty()
@@ -43,6 +45,12 @@ export class CreateQuizDto {
   @IsNumber()
   @Min(1)
   scorePerQuestion: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  maxAttempts?: number;
 
   @IsNotEmpty()
   @IsDateString()

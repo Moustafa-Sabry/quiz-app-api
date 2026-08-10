@@ -3,4 +3,6 @@ export enum AnswersEnum {
   B = 'B',
   C = 'C',
   D = 'D',
+  TRUE = 'TRUE',
+  FALSE = 'FALSE',
 }
