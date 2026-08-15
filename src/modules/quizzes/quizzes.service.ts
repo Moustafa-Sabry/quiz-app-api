@@ -16,6 +16,8 @@ import { QuizStatus } from '../../common/enums/quizStatus.enum';
 import { Question } from '../../schemas/Question';
 import { Group, GroupDocument } from '../../schemas/Group';
 import { User, UserDocument } from '../../schemas/User';
+import { ReassignQuizDto } from './dtos/reassign-quiz.dto';
+import { Types } from 'mongoose';
 @Injectable()
 export class QuizzesService {
   constructor(
@@ -271,4 +273,36 @@ export class QuizzesService {
       data: quiz,
     };
   }
+
+
+  //////////////////////////////////
+async reassignQuiz(
+  quizId: string,
+  dto: ReassignQuizDto,
+  instructorId: string,
+) {
+  const quiz = await this.quizModel.findById(quizId);
+
+  if (!quiz || quiz.isDeleted) {
+    throw new NotFoundException('Quiz not found');
+  }
+
+  if (quiz.createdBy.toString() !== instructorId) {
+    throw new ForbiddenException(
+      'You are not allowed to reassign this quiz',
+    );
+  }
+
+  const newScheduledDate = new Date(dto.scheduledDate);
+
+  if (newScheduledDate <= new Date()) {
+    throw new BadRequestException(
+      'New scheduled date must be in the future',
+    );
+  }
+
+  quiz.scheduledDate = newScheduledDate;
+
+  return quiz.save();
+}
 }

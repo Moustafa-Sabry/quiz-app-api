@@ -8,13 +8,25 @@ import { QuestionsModule } from './modules/questions/questions.module';
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
 import { ResultsModule } from './modules/results/results.module';
 import { StudentsModule } from './modules/students/students.module';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ConfigModule } from '@nestjs/config';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { APP_GUARD } from '@nestjs/core';
+import {
+  ThrottlerGuard,
+  ThrottlerModule,
+} from '@nestjs/throttler';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
 
     DBConnect,
 
@@ -26,7 +38,15 @@ import { ConfigModule } from '@nestjs/config';
     StudentsModule,
     DashboardModule,
   ],
+
   controllers: [AppController],
-  providers: [AppService],
+
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

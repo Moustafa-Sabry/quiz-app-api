@@ -85,6 +85,11 @@ export class Quiz {
     ref: 'User',
   })
   createdBy: Types.ObjectId;
+
+  @Prop({
+    default: 0,
+  })
+  totalEnrolledStudents: number;
 }
 export const QuizSchema = SchemaFactory.createForClass(Quiz);
 QuizSchema.pre('validate', async function () {
