@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
-import { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument, Types } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 @Schema({
@@ -34,6 +34,12 @@ export class User {
     })
     password: string;
 
+    @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: User.name,
+    })
+    instructorId: Types.ObjectId;
+
     @Prop()
     phone?: string;
 
@@ -54,6 +60,11 @@ export class User {
 
     @Prop()
     passwordChangedAt?: Date; 
+
+    @Prop({
+    default: true,
+    })
+    isActive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
